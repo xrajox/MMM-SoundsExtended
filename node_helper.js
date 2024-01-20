@@ -5,6 +5,8 @@ const path       = require('path');
 const NodeHelper = require('node_helper');
 const Player     = require('node-aplay');
 const moment     = require('moment');
+const Log        = require("logger");
+
 
 module.exports = NodeHelper.create({
     isLoaded: false,
@@ -29,13 +31,29 @@ module.exports = NodeHelper.create({
                 this.playFile(payload);
             } else if (typeof payload === 'object') {
                 if (typeof payload.sound === 'undefined' || !payload.sound) {
-                    this.log('Could not play sound, notification payload `sound` was not supplied');
+                    Log.error('Could not play sound, notification payload `sound` was not supplied');
                 } else {
                     this.playFile(payload.sound, payload.delay);
                 }
             }
         }
     },
+
+    start: function() {
+		Log.info('Starting module: ' + this.name);
+
+		// http://<host>/MMM-SoundsExtended/play_sound?sound=sonar.wav
+		this.expressApp.get("/" + this.name + "/play_sound", (req, res) => {
+			let sound = req.query.sound;
+            let delay = req.query.delay;
+            
+            Log.info('sound: ' + sound + " delay:" + delay);
+
+            this.playFile(sound, delay);
+
+            res.send("done"); 
+		});
+	},
 
     /**
      * @param {String}  filename
@@ -45,15 +63,15 @@ module.exports = NodeHelper.create({
         // Only play if outside of quiet hours
         let play = true;
 
-        if (this.config.quietTimeStart && this.config.quietTimeEnd) {
-            this.log('Quiet Time Start is: ' + this.config.quietTimeStart, true);
-            this.log('Quiet Time End is: ' + this.config.quietTimeEnd, true);
+        if (this.config && this.config.quietTimeStart && this.config.quietTimeEnd) {
+            Log.info('Quiet Time Start is: ' + this.config.quietTimeStart);
+            Log.info('Quiet Time End is: ' + this.config.quietTimeEnd);
 
             let start_moment = moment(this.config.quietTimeStart, 'HH:mm');
             let end_moment   = moment(this.config.quietTimeEnd, 'HH:mm');
 
-            this.log('Start Moment: ' + start_moment.format('YYYY-MM-DD HH:mm'));
-            this.log('End Moment: ' + end_moment.format('YYYY-MM-DD HH:mm'));
+            Log.info('Start Moment: ' + start_moment.format('YYYY-MM-DD HH:mm'));
+            Log.info('End Moment: ' + end_moment.format('YYYY-MM-DD HH:mm'));
 
             let time = moment();
 
@@ -71,38 +89,33 @@ module.exports = NodeHelper.create({
         }
 
         if (play) {
-            delay = delay || this.config.defaultDelay;
+            delay = delay || (this.config && this.config.defaultDelay) || 10;
 
             let soundfile = __dirname + '/sounds/' + filename;
+            Log.info('soundfile: ' + soundfile);
 
             // Make sure file exists before playing
             try {
                 fs.accessSync(soundfile, fs.F_OK);
             } catch (e) {
                 // Custom sequence doesn't exist
-                this.log('Sound does not exist: ' + soundfile);
+                Log.error('Sound does not exist: ' + soundfile);
                 return;
             }
 
-            this.log('Playing ' + filename + ' with ' + delay + 'ms delay', true);
+            Log.info('Playing ' + filename + ' with ' + delay + 'ms delay');
 
-            setTimeout(() => {
-                new Player(path.normalize(__dirname + '/sounds/' + filename)).play();
-            }, delay);
+            try {
+                setTimeout(() => {
+                    new Player(path.normalize(__dirname + '/sounds/' + filename)).play();
+                }, delay);
+            } catch (e) {
+                // Custom sequence doesn't exist
+                Log.error('Exception during playing sound: ' + e);
+                return;
+            }
         } else {
-            this.log('Not playing sound as quiet hours are in effect');
+            Log.info('Not playing sound as quiet hours are in effect');
         }
     },
-
-    /**
-     * Outputs log messages
-     *
-     * @param {String}  message
-     * @param {Boolean} [debug_only]
-     */
-    log: function (message, debug_only) {
-        if (!debug_only || (debug_only && typeof this.config.debug !== 'undefined' && this.config.debug)) {
-            console.log('[' + moment().format('YYYY-MM-DD HH:mm:ss') + '] [MMM-Sounds] ' + message);
-        }
-    }
 });

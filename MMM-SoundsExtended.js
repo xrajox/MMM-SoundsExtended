@@ -1,10 +1,9 @@
-Module.register('MMM-Sounds', {
+Module.register('MMM-SoundsExtended', {
 
     /**
      * Default Config
      */
     defaults: {
-        debug:          false,
         startupSound:   null,
         defaultDelay:   10,
         quietTimeStart: null,
@@ -15,8 +14,8 @@ Module.register('MMM-Sounds', {
      * Module Start
      */
     start: function() {
+        Log.info('Starting module: ' + this.name + ' ' + JSON.stringify(this.config));
         this.sendSocketNotification('CONFIG', this.config);
-        Log.info('Starting module: ' + this.name);
     },
 
     /**

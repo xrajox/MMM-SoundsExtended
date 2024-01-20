@@ -1,19 +1,26 @@
 {
   "name": "Magic-Mirror-Module-Sounds",
-  "version": "1.0.0",
-  "description": "Play sounds for the Magic Mirror.",
+  "version": "0.0.0",
+  "description": "Play sounds for the Magic Mirror. Fork of MMM-Sounds from Jamie Curnow",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jc21/MMM-Sounds"
+    "url": "git+https://github.com/xrajox/MMM-SoundsExtended"
   },
   "keywords": [
     "magic mirror",
     "smart mirror",
-    "MMM-Sounds",
+    "MMM-SoundsExtended",
     "module",
     "sound"
   ],
-  "author": "Jamie Curnow",
+  "author": {
+    "name": "Radovan Josth"
+  },
+  "contributors": [
+    {
+      "name": "Jamie Curnow"
+    }
+  ],
   "license": "MIT",
   "dependencies": {
     "node-aplay": "^1.0.3"
