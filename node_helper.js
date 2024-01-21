@@ -11,6 +11,7 @@ const Log        = require("logger");
 module.exports = NodeHelper.create({
     isLoaded: false,
     config:   null,
+    sound_dir: null,
 
     /**
      * @param {String} notification
@@ -42,8 +43,10 @@ module.exports = NodeHelper.create({
     start: function() {
 		Log.info('Starting module: ' + this.name);
 
+        this.sound_dir = this.path + '/sounds/';
+
 		// http://<host>/MMM-SoundsExtended/play_sound?sound=sonar.wav
-		this.expressApp.get("/" + this.name + "/play_sound", (req, res) => {
+		this.expressApp.get("/" + this.name + "/play", (req, res) => {
 			let sound = req.query.sound;
             let delay = req.query.delay;
             
@@ -52,6 +55,24 @@ module.exports = NodeHelper.create({
             this.playFile(sound, delay);
 
             res.send("done"); 
+		});
+
+        this.expressApp.get("/" + this.name + "/list", (req, res) => {
+            let sound_list = [];
+
+            Log.debug("Listing: " + this.sound_dir);
+
+            let files = fs.readdirSync(this.sound_dir);
+            
+            files.forEach(file => {
+                let sound = {
+                    "name" : file,
+                    "url" : req.protocol + '://' + req.get('host') + "/" + this.name + "/play?sound=" + file
+                };
+                sound_list.push(sound);
+            });
+
+            res.send(sound_list);
 		});
 	},
 
@@ -91,7 +112,7 @@ module.exports = NodeHelper.create({
         if (play) {
             delay = delay || (this.config && this.config.defaultDelay) || 10;
 
-            let soundfile = __dirname + '/sounds/' + filename;
+            let soundfile = this.sound_dir + filename;
             Log.info('soundfile: ' + soundfile);
 
             // Make sure file exists before playing
